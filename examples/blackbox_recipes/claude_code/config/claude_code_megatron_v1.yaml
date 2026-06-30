@@ -47,7 +47,6 @@ actor_rollout_ref:
 
     multi_turn:
       enable: true
-      max_assistant_turns: 1
       max_parallel_calls: 1
       format: qwen3_coder
 
@@ -59,7 +58,7 @@ actor_rollout_ref:
       agent_framework:
         gateway_count: 1
         agent_runners:
-          swe_agent:
+          claude_code:
             runner_fqn: examples.blackbox_recipes.claude_code.claude_code_runner.claude_code_runner
             dispatch_mode: ray_task
             max_concurrent_sessions: 32
@@ -140,8 +139,8 @@ trainer:
   n_gpus_per_node: 4
   total_epochs: 10
   total_training_steps: null
-  project_name: swe_agent_blackbox
-  experiment_name: swe_agent_claude
+  project_name: claude_code
+  experiment_name: claude_code
   logger:
     - console
   device: cuda
@@ -149,7 +148,7 @@ trainer:
   val_only: false
   save_freq: 10
   test_freq: 10
-  default_local_dir: checkpoints/swe_agent_blackbox
+  default_local_dir: checkpoints/claude_code
   resume_mode: auto
   use_v1: true
   v1:

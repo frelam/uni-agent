@@ -21,7 +21,7 @@ import httpx
 
 from examples.blackbox_recipes.claude_code.dataset import extract_image
 from examples.blackbox_recipes.claude_code.reward import build_reward_context, evaluate_in_env
-from examples.blackbox_recipes.sandbox.sandbox import (
+from examples.blackbox_recipes.sandbox_client import (
     SandboxClient,
     extract_upstream,
     rewrite_gateway_url,
@@ -249,7 +249,7 @@ async def claude_code_runner(
                 )
 
         claude_base_url = rewrite_gateway_url(gateway_url, strip_v1=True)
-        max_turns = int(os.environ.get("SWE_AGENT_MAX_TURNS", "100"))
+        max_turns = int(os.environ.get("AGENT_MAX_TURNS", "100"))
         agent_cmd = build_claude_command(
             task=task,
             base_url=claude_base_url,
