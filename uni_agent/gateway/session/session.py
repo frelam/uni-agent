@@ -274,7 +274,7 @@ class GatewaySession:
                         materialized_trajectory=None,
                         length_exhausted_trajectory=self._build_materialized_trajectory(
                             active=buffer,
-                            extra_fields={"finish_reason": "length"},
+                            extra_fields={"materialization_reason": "max_response_length"},
                         ),
                     )
                 buffer.response_ids.extend(incremental_ids)

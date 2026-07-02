@@ -81,7 +81,7 @@ async def test_gateway_actor_max_tokens_clamped_to_remaining_response_budget():
 async def test_gateway_actor_continuation_budget_exhausted_materializes_length_stop():
     """When a continuation request would push the total response tokens past
     ``response_length``, the gateway skips the backend call, commits the
-    active trajectory with ``finish_reason="length"``, and returns an
+    active trajectory with a max-response-length materialization reason, and returns an
     empty assistant message without incrementing ``completion_tokens``."""
     from uni_agent.gateway.config import GatewayActorConfig
     from uni_agent.gateway.gateway import _GatewayActor
@@ -130,7 +130,7 @@ async def test_gateway_actor_continuation_budget_exhausted_materializes_length_s
         assert backend.calls == []
         assert session.active_trajectory is None
         assert len(session.trajectories) == 1
-        assert session.trajectories[0].extra_fields["finish_reason"] == "length"
+        assert session.trajectories[0].extra_fields["materialization_reason"] == "max_response_length"
         assert "length_truncated" not in session.trajectories[0].extra_fields
         assert "traj_exit_reason" not in session.trajectories[0].extra_fields
     finally:
