@@ -60,8 +60,8 @@ class Trajectory:
         num_turns: Chat-turn count materialized with the trajectory.
         routed_experts: Optional expert-routing data captured by the backend.
         multi_modal_data: Optional image/video data associated with the prompt.
-        extra_fields: Gateway-owned extension fields, such as length finish
-            metadata consumed by training adapters.
+        extra_fields: Gateway-owned extension fields, such as trajectory
+            materialization metadata consumed by training adapters.
     """
 
     prompt_ids: list[int]
