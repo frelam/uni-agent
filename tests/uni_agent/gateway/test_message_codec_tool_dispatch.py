@@ -4,7 +4,6 @@ import pytest
 
 from tests.uni_agent.support import FakeTokenizer
 
-
 TOOLS = [
     {
         "type": "function",

@@ -27,12 +27,11 @@ from uuid import uuid4
 import numpy as np
 import ray
 
+from uni_agent.framework.entry import build_agent_framework, build_gateway_manager
 from verl.experimental.reward_loop.reward_loop import RewardLoopWorker
 from verl.utils import tensordict_utils as tu
 from verl.utils.transferqueue_utils import tq
 from verl.workers.rollout.llm_server import LLMServerManager
-
-from uni_agent.framework.entry import build_agent_framework, build_gateway_manager
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -239,7 +238,10 @@ def _report(samples, uids, captured_scores) -> dict[str, Any]:
     mean = float(np.mean(per_sample_scores)) if per_sample_scores else 0.0
     logger.info(
         "Resolved %d / %d samples (%.2f%%), mean score: %.4f",
-        resolved, len(samples), 100.0 * resolved / max(len(samples), 1), mean,
+        resolved,
+        len(samples),
+        100.0 * resolved / max(len(samples), 1),
+        mean,
     )
     return {"resolved": resolved, "total": len(samples), "mean_score": mean, "per_sample_scores": per_sample_scores}
 

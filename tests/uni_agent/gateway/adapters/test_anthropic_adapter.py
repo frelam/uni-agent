@@ -74,13 +74,19 @@ def test_malformed_anthropic_content_blocks_rejected():
         {"messages": [{"role": "user", "content": [{"type": "audio", "data": "x"}]}], "max_tokens": 8},
         {
             "messages": [
-                {"role": "assistant", "content": [{"type": "tool_use", "name": "lookup", "input": {"q": "x"}}]}
+                {
+                    "role": "assistant",
+                    "content": [{"type": "tool_use", "name": "lookup", "input": {"q": "x"}}],
+                }
             ],
             "max_tokens": 8,
         },
         {
             "messages": [
-                {"role": "assistant", "content": [{"type": "tool_use", "id": 123, "name": "lookup", "input": {"q": "x"}}]}
+                {
+                    "role": "assistant",
+                    "content": [{"type": "tool_use", "id": 123, "name": "lookup", "input": {"q": "x"}}],
+                }
             ],
             "max_tokens": 8,
         },

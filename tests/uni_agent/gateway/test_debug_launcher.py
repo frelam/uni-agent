@@ -231,6 +231,7 @@ def test_parse_args_minimal_and_openai_required_args_validation(tmp_path):
 def test_real_tokenizer_wrapper_flattens_encoding_template_results():
     """Real tokenizer wrappers flatten tokenizers Encoding objects returned by
     apply_chat_template while delegating other tokenizer methods."""
+
     class FakeEncoding:
         def __init__(self, ids):
             self.ids = ids
@@ -352,6 +353,7 @@ async def test_openai_completions_backend_generate_sends_prompt_token_ids_and_pa
 async def test_openai_completions_backend_requires_token_ids(monkeypatch):
     """A completions backend response without token_ids is rejected because
     trajectory response tokens must come from backend token truth."""
+
     class FakeResponse:
         def raise_for_status(self):
             pass
@@ -386,6 +388,7 @@ async def test_openai_completions_backend_requires_token_ids(monkeypatch):
 async def test_openai_completions_backend_http_error_includes_request_id_and_body(monkeypatch):
     """HTTP errors from the completions backend include the gateway request id,
     status code, and response body in the raised diagnostic."""
+
     class FakeResponse:
         is_error = True
         status_code = 400
@@ -424,6 +427,7 @@ async def test_openai_completions_backend_http_error_includes_request_id_and_bod
 async def test_run_claude_once_records_timeout_metadata(monkeypatch, tmp_path):
     """A timed-out one-shot Claude subprocess records timeout metadata and
     preserves captured stdout/stderr files for diagnosis."""
+
     def fake_run(cmd, **kwargs):
         raise subprocess.TimeoutExpired(cmd=cmd, timeout=kwargs["timeout"], output="partial stdout", stderr="slow")
 
@@ -562,6 +566,7 @@ async def test_run_debug_session_once_fake_creates_finalizes_and_writes_trajecto
 async def test_async_main_returns_nonzero_when_claude_fails(monkeypatch, tmp_path):
     """The CLI exits with Claude's non-zero return code when one-shot Claude
     execution fails after artifacts are written."""
+
     async def fake_run_debug_session_once(**kwargs):
         return debug_launcher.DebugSessionResult(
             session_id=kwargs["session_id"],

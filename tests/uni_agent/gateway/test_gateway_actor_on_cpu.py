@@ -673,9 +673,9 @@ async def test_gateway_actor_continuation_with_tool_returned_image_appends_media
     the new image is appended to the session media accumulator. The full
     ``prompt_ids`` sequence (initial prompt + tool-call tokens + incremental
     prompt) is verified token-by-token."""
+    import uni_agent.gateway.session.codec as codec_mod
     from uni_agent.gateway.config import GatewayActorConfig
     from uni_agent.gateway.gateway import _GatewayActor
-    import uni_agent.gateway.session.codec as codec_mod
     from verl.utils.chat_template import apply_chat_template, initialize_system_prompt
 
     monkeypatch.setattr(codec_mod, "_extract_tool_calls_with_sglang_or_vllm", fake_tool_call_dispatch)
@@ -1131,9 +1131,9 @@ async def test_gateway_actor_backend_failure_after_tool_mismatch_does_not_split(
 async def test_gateway_actor_tool_call_decode_returns_openai_format(monkeypatch):
     """When tool_parser_name is set and model outputs tool call tokens,
     the HTTP response should contain tool_calls in OpenAI format."""
+    import uni_agent.gateway.session.codec as codec_mod
     from uni_agent.gateway.config import GatewayActorConfig
     from uni_agent.gateway.gateway import _GatewayActor
-    import uni_agent.gateway.session.codec as codec_mod
 
     monkeypatch.setattr(codec_mod, "_extract_tool_calls_with_sglang_or_vllm", fake_tool_call_dispatch)
     tool_call_text = '<tool_call>\n{"name": "search", "arguments": {"query": "weather"}}\n</tool_call>'
@@ -1256,9 +1256,9 @@ async def test_anthropic_tool_turn_round_trip_extends_not_reencodes(monkeypatch)
     """When an Anthropic agent echoes a previous assistant tool_use turn back as
     history, conversion must reproduce stored normalized message sufficiently for
     prefix check to pass and extend one trajectory instead of re-encoding a new one."""
+    import uni_agent.gateway.session.codec as codec_mod
     from uni_agent.gateway.config import GatewayActorConfig
     from uni_agent.gateway.gateway import _GatewayActor
-    import uni_agent.gateway.session.codec as codec_mod
 
     monkeypatch.setattr(codec_mod, "_extract_tool_calls_with_sglang_or_vllm", fake_tool_call_dispatch)
     tool_call_text = '<tool_call>\n{"name": "search", "arguments": {"query": "weather"}}\n</tool_call>'

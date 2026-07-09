@@ -69,7 +69,7 @@ def _extract_issue_text(task: str) -> str:
     start = task.find("<issue_description>")
     end = task.find("</issue_description>")
     if start >= 0 and end > start:
-        return task[start + len("<issue_description>"):end].strip()
+        return task[start + len("<issue_description>") : end].strip()
     marker = "\nFollow these steps to resolve the issue:"
     if marker in task:
         return task.split(marker, 1)[0].strip()
@@ -94,12 +94,14 @@ def _decode_metadata_list(value) -> list[str]:
 def build_claude_task(raw_prompt, tools_kwargs: dict | None = None) -> str:
     tools_kwargs = tools_kwargs or {}
     task = extract_task(raw_prompt)
-    metadata = ((tools_kwargs.get("reward") or {}).get("metadata") or {})
+    metadata = (tools_kwargs.get("reward") or {}).get("metadata") or {}
     issue = metadata.get("problem_statement") or _extract_issue_text(task)
     tests = _decode_metadata_list(metadata.get("FAIL_TO_PASS"))
     if not tests:
         tests = _decode_metadata_list(metadata.get("PASS_TO_PASS"))[:3]
-    tests_block = "\n".join(f"- {test}" for test in tests) if tests else "- Run the closest relevant tests you identify."
+    tests_block = (
+        "\n".join(f"- {test}" for test in tests) if tests else "- Run the closest relevant tests you identify."
+    )
 
     return (
         "You are fixing a SWE-bench task in /testbed.\n\n"
@@ -107,14 +109,17 @@ def build_claude_task(raw_prompt, tools_kwargs: dict | None = None) -> str:
         f"{issue}\n\n"
         "Rules:\n"
         "- Edit source files only. Do not modify tests.\n"
-        "- The development environment is already installed; do not install packages unless a test command proves it is necessary.\n"
+        "- The development environment is already installed; do not install packages unless a test command proves it "
+        "is necessary.\n"
         "- There is no submit tool in this environment. Do not try to submit.\n"
         "- Do not create extra edge-case test files after the relevant tests pass.\n"
-        "- Do not run `pytest --collect-only`, `git log`, or any other command that does not directly validate the fix.\n"
+        "- Do not run `pytest --collect-only`, `git log`, or any other command that does not directly validate the "
+        "fix.\n"
         "- Do not analyze unrelated `is_separable` behavior.\n"
         "- Do not run additional ad-hoc verification after the listed relevant pytest command passes.\n"
         "- Do not commit.\n"
-        "- After the minimal fix is applied and a relevant pytest command passes, print a one-line summary and exit immediately.\n\n"
+        "- After the minimal fix is applied and a relevant pytest command passes, print a one-line summary and exit "
+        "immediately.\n\n"
         "Relevant tests to run after the fix:\n"
         f"{tests_block}\n"
     )
@@ -175,8 +180,7 @@ def build_claude_command(
     return (
         "unset HTTP_PROXY HTTPS_PROXY http_proxy https_proxy NO_PROXY no_proxy; "
         "cd /testbed; "
-        f"{env_prefix} "
-        + shlex.join(argv)
+        f"{env_prefix} " + shlex.join(argv)
     )
 
 
