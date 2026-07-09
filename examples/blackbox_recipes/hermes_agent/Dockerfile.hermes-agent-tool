@@ -1,0 +1,8 @@
+# Hermes Agent sidecar tool image.
+#
+# Mounted at /opt/hermes-agent inside the SWE-bench sandbox.
+# The entrypoint script (run_hermes_in_sandbox.py) uses Python stdlib only;
+# the sandbox's own Python interpreter executes it.
+
+FROM python:3.11-slim
+COPY run_hermes_in_sandbox.py /opt/hermes-agent/run_hermes_in_sandbox.py
