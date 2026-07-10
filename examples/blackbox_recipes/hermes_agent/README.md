@@ -5,8 +5,12 @@
 A self-contained Python agent with Hermes tool-call format runs inside the
 SWE-bench sandbox through a sidecar tool image. The external runner creates
 the sandbox, mounts the tool image at `/opt/hermes-agent`, runs the Python
-entrypoint against the gateway URL, and evaluates the reward in the same
-sandbox.
+entrypoint against the gateway URL, and collects raw output.
+
+The runner is **scoring-agnostic**: it optionally runs sandbox tests (if
+`tools_kwargs.scoring.sandbox_eval` is true) and posts all raw data to the
+Gateway. The actual scoring is handled by a pluggable `custom_reward_function`
+(verl pattern), e.g. `uni_agent.reward.llm_judge.compute_score`.
 
 The entrypoint (`run_hermes_in_sandbox.py`) uses **Python stdlib only** (no
 pip dependencies) — it calls the Gateway's OpenAI-compatible
@@ -52,6 +56,25 @@ everything else lives in this directory.
   |-- SandboxEnvForReward(sandbox) -> evaluate_in_env()
   `-- POST session.reward_info_url
 ```
+
+## Scoring
+
+Per-sample scoring configuration via `tools_kwargs.scoring`:
+
+```python
+# Sandbox tests only (default)
+{"sandbox_eval": True}
+
+# LLM judge only (subjective tasks)
+{"sandbox_eval": False, "llm_judge": True}
+
+# Both: weighted combination
+{"sandbox_eval": True, "llm_judge": True, "sandbox_weight": 0.5}
+```
+
+Scoring is executed by the pluggable `custom_reward_function` specified in the
+training config (e.g. `uni_agent.reward.llm_judge.compute_score`). The runner
+only collects raw data — no scoring decisions are made in the runner.
 
 ## Prerequisites
 

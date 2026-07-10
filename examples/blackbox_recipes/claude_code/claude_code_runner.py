@@ -215,14 +215,23 @@ async def claude_code_runner(
 ) -> None:
     """Run Claude Code inside a sandbox with sidecar tool mount.
 
+    This runner is **scoring-agnostic**: it executes the agent, collects raw
+    output, optionally runs sandbox tests, and posts everything to the
+    Gateway.  The actual scoring is done later by the pluggable
+    ``custom_reward_function`` (``uni_agent.reward.llm_judge.compute_score``)
+    which is called by verl's RewardLoopWorker.
+
     Flow:
         1. Create remote sandbox with the claude-code sidecar
         2. Run the claude binary against the gateway tunnel
-        3. Evaluate reward in the same sandbox
-        4. Post reward_info for the framework reward path
+        3. If scoring config requests sandbox eval: run tests
+        4. Post raw data + sandbox results as reward_info
     """
     tools_kwargs = tools_kwargs or {}
     logger.info("claude_code_runner called, sample_index=%d", sample_index)
+
+    scoring = tools_kwargs.get("scoring") or {}
+    data_source = tools_kwargs.get("data_source", "")
 
     task = build_claude_task(raw_prompt, tools_kwargs)
     env_config = tools_kwargs.get("env", {})
@@ -252,6 +261,7 @@ async def claude_code_runner(
                     setup_result.stdout + setup_result.stderr,
                 )
 
+        # ── Run agent ────────────────────────────────────────────────
         claude_base_url = rewrite_gateway_url(gateway_url, strip_v1=True)
         max_turns = int(os.environ.get("AGENT_MAX_TURNS", "100"))
         agent_cmd = build_claude_command(
@@ -264,24 +274,35 @@ async def claude_code_runner(
         started_at = time.perf_counter()
         result = await sandbox.run(agent_cmd, timeout=int(run_timeout))
         elapsed = time.perf_counter() - started_at
+        agent_stdout = (result.stdout or "")
+        stdout_tail = agent_stdout[-4000:] if len(agent_stdout) > 4000 else agent_stdout
         logger.info("[sample %d] claude-code finished rc=%s elapsed=%.1fs", sample_index, result.exit_code, elapsed)
         if result.exit_code != 0:
             logger.warning(
                 "[sample %d] claude-code failed stdout_tail=%r stderr_tail=%r",
                 sample_index,
-                (result.stdout or "")[-4000:],
+                stdout_tail,
                 (result.stderr or "")[-4000:],
             )
 
-        metadata, eval_timeout = build_reward_context(tools_kwargs)
-        score, eval_result = await evaluate_in_env(SandboxEnvForReward(sandbox), metadata, eval_timeout)
-        logger.info("[sample %d] reward done score=%s resolved=%s", sample_index, score, eval_result.get("resolved"))
-
-        reward_info = {
-            "reward_score": score,
+        # ── Collect raw data ─────────────────────────────────────────
+        reward_info: dict = {
+            "task": task[:20000],
+            "agent_output": stdout_tail[:20000],
+            "data_source": data_source,
             "claude_code_exit_code": result.exit_code,
-            **eval_result,
+            "elapsed_seconds": elapsed,
+            "scoring": scoring,  # passed through for compute_score
         }
+
+        # ── Sandbox tests (optional, before sandbox cleanup) ────────
+        if scoring.get("sandbox_eval", True):
+            metadata, eval_timeout = build_reward_context(tools_kwargs)
+            score, eval_result = await evaluate_in_env(SandboxEnvForReward(sandbox), metadata, eval_timeout)
+            logger.info("[sample %d] reward done score=%s resolved=%s", sample_index, score, eval_result.get("resolved"))
+            reward_info["accuracy_reward"] = score
+            reward_info.update(eval_result)
+
         if not session.reward_info_url:
             raise ValueError(f"reward_info_url is empty for session {session.session_id}")
         async with httpx.AsyncClient(timeout=30.0) as client:

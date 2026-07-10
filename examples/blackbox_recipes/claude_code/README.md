@@ -4,13 +4,36 @@
 
 Claude Code runs inside the SWE-bench sandbox through a sidecar tool image. The
 external runner creates the sandbox, mounts the tool image at `/opt/claude-code`,
-invokes the `claude` binary against the gateway URL, and evaluates the reward in
-the same sandbox.
+invokes the `claude` binary against the gateway URL, and collects raw output.
+
+The runner is **scoring-agnostic**: it optionally runs sandbox tests (if
+`tools_kwargs.scoring.sandbox_eval` is true) and posts all raw data to the
+Gateway. The actual scoring is handled by a pluggable `custom_reward_function`
+(verl pattern), e.g. `uni_agent.reward.llm_judge.compute_score`.
 
 Unlike the mini-swe-agent recipe, there is no in-sandbox Python entrypoint
 (`run_agent.py`): the runner builds a single `claude -p ...` command and executes
 it directly. The agent reaches the LLM gateway through the sandbox-internal
 tunnel (`ANTHROPIC_BASE_URL` rewritten to `http://127.0.0.1:<proxy_port>`).
+
+## Scoring
+
+Per-sample scoring configuration via `tools_kwargs.scoring`:
+
+```python
+# Sandbox tests only (default)
+{"sandbox_eval": True}
+
+# LLM judge only (subjective tasks)
+{"sandbox_eval": False, "llm_judge": True}
+
+# Both: weighted combination
+{"sandbox_eval": True, "llm_judge": True, "sandbox_weight": 0.5}
+```
+
+The `custom_reward_function` (e.g. `uni_agent.reward.llm_judge.compute_score`)
+reads the runner's raw output from `extra_info` and applies the configured
+scoring pipeline.
 
 The Claude Code tool image uses a Node builder to install the
 `@anthropic-ai/claude-code` npm package, then copies the result into a minimal
