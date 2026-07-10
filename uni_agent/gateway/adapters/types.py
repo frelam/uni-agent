@@ -7,7 +7,9 @@ shape stays OpenAI-like for chat templates.
 
 from __future__ import annotations
 
-from typing import Any, Literal, NotRequired, TypedDict
+from typing import Any, Literal, TypedDict
+
+from typing_extensions import NotRequired
 
 
 class MalformedRequestError(ValueError):
