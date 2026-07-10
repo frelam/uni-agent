@@ -63,11 +63,16 @@ JUDGE_PROMPT_MAP: dict[str, str | None] = {
 }
 
 
-def load_judge_prompt(data_source: str, prompts_dir: str | None = None) -> str | None:
+def load_judge_prompt(data_source: str) -> str | None:
     """Load a dataset-specific judge prompt.
 
-    Looks for ``<prompts_dir>/<mapped_name>.txt`` based on ``data_source``.
-    Falls back to ``JUDGE_PROMPTS_DIR`` env var, then ``uni_agent/reward/prompts/``.
+    Looks for ``<mapped_name>.txt`` based on ``data_source``, searching in:
+    1. ``JUDGE_PROMPTS_DIR`` environment variable (if set and within allowed base)
+    2. ``uni_agent/reward/prompts/`` (built-in default)
+
+    Only directories set via ``JUDGE_PROMPTS_DIR`` env var or the built-in
+    default are allowed — caller-supplied paths are NOT accepted, to prevent
+    path traversal from untrusted ``extra_info``.
 
     Returns ``None`` if no prompt file is found (caller should use default).
     """
@@ -86,17 +91,28 @@ def load_judge_prompt(data_source: str, prompts_dir: str | None = None) -> str |
         logger.info("No judge prompt configured for data_source=%r; using default rubric.", data_source)
         return None
 
-    # Resolve prompts directory
-    search_dirs: list[Path] = []
-    if prompts_dir:
-        search_dirs.append(Path(prompts_dir))
+    # Validate filename — must be a simple basename, no path components
+    if filename != Path(filename).name or ".." in filename:
+        logger.warning("Rejected suspicious judge prompt filename: %r", filename)
+        return None
+
+    # Resolve search directories (env var + built-in only)
+    search_dirs: list[Path] = [_DEFAULT_PROMPTS_DIR]
     env_dir = os.environ.get("JUDGE_PROMPTS_DIR")
     if env_dir:
-        search_dirs.append(Path(env_dir))
-    search_dirs.append(_DEFAULT_PROMPTS_DIR)
+        allowed = Path(env_dir).resolve()
+        # Only accept if it resolves to a real, absolute path
+        if allowed.is_absolute():
+            search_dirs.insert(0, allowed)
 
     for d in search_dirs:
-        prompt_path = d / filename
+        prompt_path = (d / filename).resolve()
+        # Ensure resolved path stays within the search directory
+        try:
+            prompt_path.relative_to(d.resolve())
+        except ValueError:
+            logger.warning("Rejected path traversal attempt: %s not under %s", prompt_path, d)
+            continue
         if prompt_path.is_file():
             logger.info("Loaded judge prompt for data_source=%r from %s", data_source, prompt_path)
             return prompt_path.read_text(encoding="utf-8")
@@ -282,10 +298,9 @@ def compute_score(
     if scoring.get("llm_judge", False):
         task = extra_info.get("task", "")
         agent_output = extra_info.get("agent_output", "")
-        prompts_dir = extra_info.get("judge_prompts_dir", None)
 
         try:
-            rubric = load_judge_prompt(str(data_source), prompts_dir=prompts_dir)
+            rubric = load_judge_prompt(str(data_source))
         except Exception:
             rubric = None
 
